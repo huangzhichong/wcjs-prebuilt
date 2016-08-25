@@ -28,56 +28,14 @@ function capitalizeFirstLetter(string) {
 
 function getWCJS(data) {
     return new Promise(function(resolve, reject) {
-        var wcjsUrl = 'https://api.github.com/repos/RSATom/WebChimera.js/releases/' + (data.version === 'latest' ? 'latest' : ('tags/' + data.version));
-        console.log('');
-        console.log('Looking for WebChimera download at ' + wcjsUrl);
-        console.log('');
-        getJson(wcjsUrl)
-            .then(function(json) {
-                if (json.message === 'Not Found') {
-                    reject('No WebChimera release found at the searched URL');
-                }
-                var candidate = null;
+        var package_name = (data.runtime.platform === 'osx' ? 'WebChimera.js_v0.2.6_electron_v1.3.3_VLC_v2.2.4_x64_osx.tar.gz' : 'WebChimera.js_v0.2.6_electron_v1.3.3_VLC_v2.2.4_x64_win.zip');
+        var download_url = "http://192.168.28.226:4096/"+package_name;
+        console.log("=====>>>>> get download url " + download_url);
 
-                _.every(json.assets, function(asset) {
-                    var assetParsed = path.parse(asset.name).name.replace('.tar', '').split('_');
-                    
-                    if(asset.name.toLowerCase().indexOf('vlc') == -1){
-                        console.log(asset.name, '\x1b[31m', 'doesn\'t include VLC','\x1b[0m');
-                        return true;
-                    }
-
-                    var assetRuntime = {
-                        type: assetParsed[2],
-                        version: (data.runtime.version === 'latest') ? 'latest' : assetParsed[3],
-                        arch: assetParsed[6],
-                        platform: assetParsed[7]
-                    };
-                    if (_.isEqual(data.runtime, assetRuntime)){
-                        candidate = asset;
-                        console.log(asset.name, '\x1b[32m', 'matching environment' + (data.version === 'latest' ? ': continuing for more recent release' : ''), '\x1b[0m');
-                        return data.version === 'latest';
-                    }
-                    else{
-                        console.log(asset.name, '\x1b[31m', 'not matching environment' ,'\x1b[0m');
-                        return true;
-                    }
-                });
-                
-                console.log('');
-
-                if (!candidate) {
-                    reject('No WebChimera release found matching your environment');
-                }
-
-                console.log('Acquiring: ', candidate.name);
-                
-                downloader.downloadAndUnpack(data.dir, candidate.browser_download_url)
-                    .then(function() {
-                        resolve(data)
-                    });
-            })
-            .catch(reject)
+        downloader.downloadAndUnpack(data.dir, download_url)
+            .then(function() {
+                resolve(data)
+            });
     });
 }
 
@@ -168,7 +126,7 @@ function parseEnv() {
         var runtime = process.env.WCJS_RUNTIME || inf.runtime || 'electron';
         var runtimeVersion = process.env.WCJS_RUNTIME_VERSION || inf.runtimeVersion || 'latest';
         var targetDir = process.env.WCJS_TARGET_DIR || inf.targetDir || './bin';
-        
+
         fs.mkdirsSync(targetDir);
 
         if (/^win/.test(platform))
@@ -180,7 +138,7 @@ function parseEnv() {
                 if (!process.env.WCJS_RUNTIME && !inf.runtime) runtime = 'nw';
             }
 
-        console.log('Fetching WebChimera prebuilt for', capitalizeFirstLetter(runtime) + ':', '\nWebChimera version:', version, 
+        console.log('Fetching WebChimera prebuilt for', capitalizeFirstLetter(runtime) + ':', '\nWebChimera version:', version,
             '\n' + capitalizeFirstLetter(runtime) + ' version:', runtimeVersion, '\nPlatform:', platform, '\nArch:', arch,
             '\nTarget dir:', targetDir);
 
